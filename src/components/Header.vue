@@ -1,60 +1,45 @@
 <template>
   <nav class="bg-gray-900 text-white shadow-md">
     <div class="container mx-auto flex justify-between items-center p-4">
-      <!-- Logo/Brand -->
       <div class="text-3xl font-bold">
         <router-link to="/" class="hover:text-gray-400"
           >MyPortfolio</router-link
         >
       </div>
 
-      <!-- Navigation Links -->
       <div class="hidden md:flex space-x-6">
-        <router-link to="/" class="hover:text-gray-400 transition"
-          >Home</router-link
+        <router-link
+          v-for="(link, index) in links"
+          :key="index"
+          :to="link.url"
+          class="hover:text-gray-400 transition"
         >
-        <router-link to="/projects" class="hover:text-gray-400 transition"
-          >Projects</router-link
-        >
-        <router-link to="/technologies" class="hover:text-gray-400 transition"
-          >Technologies</router-link
-        >
-        <router-link to="/contact" class="hover:text-gray-400 transition"
-          >Contact</router-link
-        >
+          {{ link.name }}
+        </router-link>
       </div>
 
-      <!-- Mobile Menu Button -->
-      <button class="md:hidden text-2xl">
+      <button @click="toggleMenu" class="md:hidden text-2xl">
         <i class="fas fa-bars"></i>
       </button>
 
-      <!-- Mobile Menu -->
       <transition name="fade">
-        <div v-if="false" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50">
+        <div
+          v-if="isMenuOpen"
+          class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50"
+          @click.self="closeMenu"
+        >
           <div
             class="flex flex-col items-center justify-center h-full space-y-6"
           >
             <router-link
-              to="/"
+              v-for="(link, index) in links"
+              :key="index"
+              :to="link.url"
               class="text-2xl text-white hover:text-gray-400 transition"
-              >Home</router-link
+              @click="closeMenu"
             >
-            <router-link
-              to="/projects"
-              class="text-2xl text-white hover:text-gray-400 transition"
-              >Projects</router-link
-            >
-            <router-link
-              to="/technologies"
-              class="text-2xl text-white hover:text-gray-400 transition"
-              >Technologies</router-link
-            >
-            <router-link
-              to="/contact"
-              class="text-2xl text-white hover:text-gray-400 transition"
-              >Contact</router-link
-            >
+              {{ link.name }}
+            </router-link>
           </div>
         </div>
       </transition>
@@ -63,20 +48,43 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, ref, onMounted } from "vue";
 import { graphqlService } from "@/services/graphql-service";
+import { NavigationLink } from "@/models/types";
 
 export default defineComponent({
   name: "NavBar",
-  components: {},
-  async mounted() {
-    const projects = await graphqlService.getProjects();
-    console.log("RESPONSE", projects);
-    const navigationLinks = await graphqlService.getNavigationLinks();
-    console.log("Nav Links", navigationLinks);
+  setup() {
+    const links = ref<NavigationLink[]>([]);
+    const isMenuOpen = ref(false);
+
+    const toggleMenu = () => {
+      isMenuOpen.value = !isMenuOpen.value;
+    };
+
+    const closeMenu = () => {
+      isMenuOpen.value = false;
+    };
+
+    onMounted(async () => {
+      try {
+        links.value = await graphqlService.getNavigationLinks();
+        console.log("Fetched navigation links:", links.value);
+      } catch (error) {
+        console.error("Failed to fetch navigation links:", error);
+      }
+    });
+
+    return {
+      links,
+      isMenuOpen,
+      toggleMenu,
+      closeMenu,
+    };
   },
 });
 </script>
+
 <style scoped>
 /* Add custom transitions for mobile menu */
 .fade-enter-active,
@@ -88,6 +96,7 @@ export default defineComponent({
   opacity: 0;
 }
 
+/* Ensure the mobile menu is properly positioned */
 nav {
   padding: 30px;
 }
